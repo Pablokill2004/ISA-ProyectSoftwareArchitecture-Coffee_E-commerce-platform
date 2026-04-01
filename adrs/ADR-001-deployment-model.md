@@ -1,7 +1,7 @@
 
 # ADR-001: Deployment Model — Microkernel en un solo contenedor
 
-|Status|Field|
+|Field|Value|
 |-|-|                                                    
 | Status |Accepted| 
 | Date |03-30-2026 | 
@@ -131,13 +131,13 @@ En despliegue:
 - Mantiene el diseño modular por contextos, facilitando extensiones específicas por país/regulación vía nuevos plug‑ins.
 - Facilita una futura migración de plug‑ins críticos a microservicios independientes, si el crecimiento lo exige.
 
-**Negativas / Riesgos**
+**Negativas / Riesgos + Mitigación**
 
 - Un fallo no manejado en un plug‑in puede tumbar todo el backend:
-  - Mitigación: manejo de errores centralizado, timeouts, circuit breakers internos, tests de regresión.
+  - **Mitigación**: manejo de errores centralizado, timeouts, circuit breakers internos, tests de regresión.
 - Menor elasticidad por contexto:
   - Si sólo Pagos aumenta de carga, todo el backend escala.
-  - Mitigación: monitorear métricas por módulo y planificar extracción a servicio independiente en el futuro.
+  - **Mitigación**: monitorear métricas por módulo y planificar extracción a servicio independiente en el futuro.
 - Tamaño creciente del despliegue con el tiempo:
-  - Mitigación: disciplina de modularización, refactor periódico y limpieza de plug‑ins obsoletos.
+  - **Mitigación**: disciplina de modularización, refactor periódico y limpieza de plug‑ins obsoletos.
 
