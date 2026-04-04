@@ -4,7 +4,7 @@
 |Field|Value|
 |-|-|                                                    
 | Status |Accepted| 
-| Date |03-30-2026 | 
+| Date |30-03-2026 | 
 | Deciders | Pablo Siquinajay, Christian Sosa| 
 
 ## Contexto

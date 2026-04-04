@@ -189,7 +189,7 @@ Suponiendo un backend en TypeScript/Node con NestJS (u otro framework modular si
 
 - **Posee**
   - Infraestructura compartida: logging, manejo de errores, configuración.
-  - Bus de eventos de dominio interno.
+  - <ins>Bus de eventos de dominio interno.</ins>
   - Abstracciones para autenticación/autorización.
   - Integración con el framework HTTP (ruteo, middlewares, etc.).
 - **Expone**

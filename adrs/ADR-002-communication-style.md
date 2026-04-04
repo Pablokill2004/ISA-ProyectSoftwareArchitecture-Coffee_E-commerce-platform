@@ -2,14 +2,13 @@
 |Field|Value|
 |-|-|                                                    
 | Status |Proposed| 
-| Date |03-31-2026 | 
+| Date |31-03-2026 | 
 | Deciders | Pablo Siquinajay, Christian Sosa| 
 
 ## Contexto
 
 ### ¿Qué problemas estamos resolviendo?
-Debemos decidir:
-
+**Debemos decidir:**
 - Qué interacciones serán **sincrónicas** (HTTP, invocaciones directas vía servicios de aplicación).
 - Qué interacciones serán **asíncronas** (eventos de dominio publicados en el bus interno o en un broker).
 
@@ -20,7 +19,7 @@ En CaféOrigen, la arquitectura microkernel se organiza en:
 - Módulos plug‑in por bounded context:
   - Identidad, Catálogo, Pedidos, Pagos, Logística, Mensajería, Reseñas.
 
-Los flujos descritos en `04-data-flow-and-interactions.md` (registro de productor, pedido completo, pago fallido, reseñas) muestran interacciones entre estos contextos:
+Los flujos descritos en `04-data-flow-and-interactions.md` (registro de productor, pedido completo, pago fallido, reseñas) muestran interacciones entre estos contextos, los cuales <ins> se deben seguir</ins>:
 
 - **Frontend ↔ Backend**: Registro/login, gestión de perfil, navegación de catálogo, creación de pedidos, reseñas, etc.
 - **Entre módulos internos**:

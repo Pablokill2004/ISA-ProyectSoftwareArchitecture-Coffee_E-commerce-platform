@@ -20,7 +20,7 @@ CaféOrigen es un marketplace que conecta a productores de café (pequeños agri
 
 Este enfoque divide el sistema en servicios desplegables de forma independiente — Catálogo, Órdenes, Pagos, Mensajería, Logística e Identidad — cada uno con su propia base de datos y comunicación principalmente mediante eventos asíncronos.
 
-Cuando un comprador realiza una orden, el servicio de Órdenes no llama directamente al servicio de Pagos. En su lugar, publica un evento `OrderPlaced` en un bus de eventos central (como Amazon EventBridge o RabbitMQ). El servicio de Pagos consume ese evento, crea una retención de fondos mediante Stripe y publica `PaymentAuthorized`. Los servicios de Logística y Mensajería también reaccionan a estos eventos de forma independiente.
+Cuando un comprador realiza una orden, el servicio de Órdenes no llama directamente al servicio de Pagos. En su lugar, publica un evento `OrderPlaced` en un bus de eventos central (como Amazon EventBridge o *RabbitMQ*). El servicio de Pagos consume ese evento, crea una retención de fondos mediante Stripe y publica `PaymentAuthorized`. Los servicios de Logística y Mensajería también reaccionan a estos eventos de forma independiente.
 
 Las llamadas síncronas se reservan para operaciones sensibles a la latencia, como verificar disponibilidad de un lote.
 

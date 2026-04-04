@@ -16,7 +16,7 @@ Este directorio captura las decisiones arquitectónicas importantes: el contexto
    - Se establece una estrategia de bases de datos separadas por contexto (esquemas o bases lógicas) dentro de un mismo motor/cluster, balanceando independencia de modelo con simplicidad operativa.
 
 4. **ADR-004 – Event / Message Bus (Bus de eventos interno basado en la aplicación + broker ligero)**
-   - Se define el uso de un bus de eventos de dominio en memoria dentro del backend, combinado con un broker ligero (por ejemplo, RabbitMQ) sólo cuando se requiere durabilidad y desacoplamiento con sistemas externos.
+   - Se define el uso de un bus de eventos de dominio en memoria dentro del backend, combinado con un broker ligero (por ejemplo, *RabbitMQ*) sólo cuando se requiere durabilidad y desacoplamiento con sistemas externos.
 
 5. **ADR-005 – Authentication & Authorization (Proveedor gestionado + RBAC por rol de usuario)**
    - Se decide usar un proveedor de identidad gestionado para autenticación (OIDC) y un modelo de autorización basado en roles (comprador, productor, admin, soporte), centralizado en el kernel.
