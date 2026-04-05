@@ -23,33 +23,27 @@ flowchart LR
 
     subgraph AppZone["Internal VPC - App Tier"]
         subgraph BackendCluster["CaféOrigen Backend (Microkernel)"]
-            BE1["Backend Pod/Container 1\n(Node.js/NestJS)\nmodules: identity, catalog, orders,\npayments, logistics, messaging, reviews"]
-            BE2["Backend Pod/Container 2\n(replica)"]
+            BE1["Backend Container 1\n(Node.js/NestJS)\nmodules: identity, catalog,\norders, payments, logistics,\nmessaging, reviews"]
+            BE2["Backend Container 2\n(replica)"]
         end
 
         subgraph Observability["Observability"]
-            Logs["Log Aggregator\n(CloudWatch/ELK)"]
-            Metrics["Metrics & Traces\n(Prometheus/Grafana/X-Ray)"]
+            Logs["Log Aggregator"]
+            Metrics["Metrics & Traces"]
         end
     end
 
     subgraph DataZone["Internal VPC - Data Tier"]
-        DBId["DB Identidad\n(schema identidad)"]
-        DBCat["DB Catálogo\n(schema catalogo)"]
-        DBOrd["DB Pedidos\n(schema pedidos)"]
-        DBPay["DB Pagos\n(schema pagos)"]
-        DBLog["DB Logística\n(schema logistica)"]
-        DBMsg["DB Mensajería\n(schema messaging)"]
-        DBRev["DB Reseñas\n(schema reviews)"]
-        Cache["Cache / Redis\n(session, tokens, lookups)"]
+        DBCore["DB Core Domains\n(Catálogo, Pedidos, Reseñas)"]
+        DBSupport["DB Supporting\n(Logística, Mensajería)"]
+        DBIdPay["DB Identidad & Pagos"]
+        Cache["Cache / Redis"]
         Broker["Message Broker\n(Kafka/SQS/SNS)"]
     end
 
     subgraph ManagedServices["Managed External Services"]
-        Stripe["Stripe Connect"]
-        SAT["SAT FEL"]
-        Shippers["AfterShip / Flexport"]
-        Channels["Twilio / SendGrid / Firebase"]
+        PaymentsTax["Pagos & Facturación\n(Stripe, SAT FEL)"]
+        MessagingLogistics["Mensajería & Logística\n(Twilio, SendGrid, Firebase,\nTransportistas)"]
     end
 
     %% Tráfico de clientes
@@ -57,24 +51,16 @@ flowchart LR
     LB -->|"HTTPS / REST & WebSocket"| BE1
     LB -->|"HTTPS / REST & WebSocket"| BE2
 
-    %% Acceso a datos
-    BE1 -->|"SQL / ORM"| DBId
-    BE1 -->|"SQL / ORM"| DBCat
-    BE1 -->|"SQL / ORM"| DBOrd
-    BE1 -->|"SQL / ORM"| DBPay
-    BE1 -->|"SQL / ORM"| DBLog
-    BE1 -->|"SQL / ORM"| DBMsg
-    BE1 -->|"SQL / ORM"| DBRev
+    %% Acceso a datos (agrupado)
+    BE1 -->|"SQL / ORM"| DBCore
+    BE1 -->|"SQL / ORM"| DBSupport
+    BE1 -->|"SQL / ORM"| DBIdPay
     BE1 -->|"GET/SET"| Cache
     BE1 -->|"Publish/Subscribe\nDomain Events"| Broker
 
-    BE2 -->|"SQL / ORM"| DBId
-    BE2 -->|"SQL / ORM"| DBCat
-    BE2 -->|"SQL / ORM"| DBOrd
-    BE2 -->|"SQL / ORM"| DBPay
-    BE2 -->|"SQL / ORM"| DBLog
-    BE2 -->|"SQL / ORM"| DBMsg
-    BE2 -->|"SQL / ORM"| DBRev
+    BE2 -->|"SQL / ORM"| DBCore
+    BE2 -->|"SQL / ORM"| DBSupport
+    BE2 -->|"SQL / ORM"| DBIdPay
     BE2 -->|"GET/SET"| Cache
     BE2 -->|"Publish/Subscribe\nDomain Events"| Broker
 
@@ -84,16 +70,12 @@ flowchart LR
     BE2 -->|"Logs / Metrics / Traces"| Logs
     BE2 -->|"Metrics / Traces"| Metrics
 
-    %% Integraciones externas (ACLs dentro del módulo Pagos/Logística/Mensajería)
-    BE1 -->|"HTTPS (ACL Pagos)"| Stripe
-    BE1 -->|"HTTPS (Conformista FEL)"| SAT
-    BE1 -->|"HTTPS (ACL Logística)"| Shippers
-    BE1 -->|"HTTPS (ACL Mensajería)"| Channels
+    %% Integraciones externas agrupadas
+    BE1 -->|"HTTPS (ACL Pagos)"| PaymentsTax
+    BE1 -->|"HTTPS (ACL Mensajería/Logística)"| MessagingLogistics
 
-    BE2 -->|"HTTPS (ACL Pagos)"| Stripe
-    BE2 -->|"HTTPS (Conformista FEL)"| SAT
-    BE2 -->|"HTTPS (ACL Logística)"| Shippers
-    BE2 -->|"HTTPS (ACL Mensajería)"| Channels
+    BE2 -->|"HTTPS (ACL Pagos)"| PaymentsTax
+    BE2 -->|"HTTPS (ACL Mensajería/Logística)"| MessagingLogistics
 ```
 
 ## Explicación de decisiones clave
@@ -105,21 +87,29 @@ flowchart LR
 
 2. **Escalado horizontal en la capa de aplicación**  
    - Varios contenedores idénticos del backend detrás de un **load balancer**.  
-   - El backend es **stateless**; el estado persistente vive en las bases de datos por contexto y en el broker de mensajes.
+   - El backend es **stateless**; el estado persistente vive en las bases de datos y en el broker de mensajes.
 
-3. **Bases de datos por contexto (lógica o físicamente separadas)**  
-   - Refuerza los **bounded contexts DDD**: cada módulo tiene su propio esquema / base.  
-   - Evita un único “big ball of mud” en la base de datos y facilita futuras extracciones a microservicios.
+3. **Bases de datos alineadas con bounded contexts (agrupadas lógicamente)**  
+   - En la implementación real, cada bounded context puede tener su propio esquema/base (Identidad, Catálogo, Pedidos, Pagos, Logística, Mensajería, Reseñas).  
+   - En el diagrama se agrupan en tres nodos lógicos para mantener la legibilidad:
+     - `DB Core Domains` para los contextos del core (Catálogo, Pedidos, Reseñas).  
+     - `DB Supporting` para los contextos de soporte (Logística, Mensajería).  
+     - `DB Identidad & Pagos` para los contextos genéricos (Identidad, Pagos).  
+   - Esta separación refuerza los **bounded contexts DDD**, evita un único “big ball of mud” de datos y facilita futuras extracciones a microservicios sin cambiar la topología conceptual.
 
 4. **Message Broker para eventos de dominio internos**  
    - Soporta el modelo descrito en los flujos de datos: `PedidoRealizado`, `PagoAutorizado`, `PedidoCancelado`, etc.  
-   - Permite que los módulos se comuniquen principalmente por **eventos**, manteniendo un acoplamiento bajo.
+   - Permite que los módulos se comuniquen principalmente por **eventos**, manteniendo un acoplamiento bajo y alineado con el diseño de bounded contexts.
 
-5. **Servicios gestionados externos**  
-   - **Stripe**, **SAT FEL**, transportistas y proveedores de mensajería se consumen a través de ACLs dentro de los módulos de Pagos, Logística y Mensajería.  
-   - Minimiza el esfuerzo operativo y mantiene el foco en el **core domain** de CaféOrigen.
+5. **Servicios gestionados externos (agrupados por tipo)**  
+   - En la realidad se integran varios servicios: Stripe, SAT FEL, APIs de transportistas, Twilio, SendGrid, Firebase, etc.  
+   - El diagrama los agrupa en dos nodos para simplificar:
+     - `Pagos & Facturación` (Stripe, SAT FEL).  
+     - `Mensajería & Logística` (Twilio, SendGrid, Firebase, transportistas).  
+   - Todos estos servicios se consumen a través de **ACLs** dentro de los módulos de Pagos, Logística y Mensajería, minimizando el esfuerzo operativo y manteniendo el foco en el **core domain** de CaféOrigen.
 
 6. **Observabilidad mínima pero suficiente**  
-   - **Logs centralizados** y **métricas / trazas** permiten diagnosticar problemas de plug‑ins defectuosos, mitigando uno de los riesgos clave del microkernel (un fallo en un módulo puede afectar a todo el proceso).
+   - **Logs centralizados** y **métricas / trazas** permiten diagnosticar problemas de plug‑ins defectuosos, mitigando uno de los riesgos clave del microkernel (un fallo en un módulo puede afectar a todo el proceso).  
+   - La separación explícita de un subcomponente de observabilidad en el diagrama enfatiza que la plataforma se diseña desde el inicio con capacidad de monitoreo.
 
-En conjunto, esta topología mantiene la **simplicidad operativa** que exige el presupuesto del proyecto, pero deja claro cómo los bounded contexts se materializan en componentes físicos y cómo se podría evolucionar hacia una arquitectura más distribuida en el futuro.
+En conjunto, esta topología mantiene la **simplicidad operativa** que exige el presupuesto del proyecto, pero deja claro cómo los bounded contexts se materializan en componentes físicos (backend, bases de datos agrupadas, broker, servicios gestionados) y cómo se podría evolucionar hacia una arquitectura más distribuida en el futuro sin cambiar las fronteras de dominio.

@@ -1,6 +1,10 @@
 # 02 — Bounded Context Map (DDD)
 
-Este diagrama resume los **7 contextos delimitados** definidos en `proposals/02-bounded-contexts.md`, agrupados por tipo de dominio (**Core / Supporting / Generic**) y etiquetando cada relación con su **patrón de integración**.
+
+Este diagrama resume los **7 contextos delimitados** definidos en `proposals/02-bounded-contexts.md`, agrupados por tipo de dominio (**Core / Supporting / Generic**) y etiquetando cada relación con su **patrón de integración**.  
+Para mantener el diagrama legible (≤10 nodos principales), los distintos sistemas externos se agrupan en dos nodos lógicos:  
+- **Sistemas de Pagos y Facturación** (Stripe, SAT FEL).  
+- **Sistemas de Mensajería y Logística** (Twilio, SendGrid, Firebase, transportistas).
 
 ## Diagrama de mapa de contextos
 
@@ -48,11 +52,13 @@ flowchart TB
     %% Reseñas influye en Catálogo (Partnership)
     Reseñas -->|"Partnership"| Catalogo
 
-    %% ACLs hacia sistemas externos (nodos genéricos)
-    Pagos -.->|"ACL"| Stripe["Stripe (externo)"]
-    Pagos -.->|"Conformista"| SAT["SAT FEL (externo)"]
-    Logistica -.->|"ACL"| Transportistas["Transportistas / AfterShip / Flexport (externo)"]
-    Mensajeria -.->|"ACL"| Canales["Twilio / SendGrid / Firebase (externo)"]
+    %% Sistemas externos agrupados (menos nodos)
+    ExternalPayments["Sistemas de Pagos y Facturación\n(Stripe, SAT FEL)"]
+    ExternalCommsLog["Sistemas de Mensajería y Logística\n(Twilio, SendGrid, Firebase, Transportistas)"]
+
+    Pagos -.->|"ACL / Conformista"| ExternalPayments
+    Logistica -.->|"ACL"| ExternalCommsLog
+    Mensajeria -.->|"ACL"| ExternalCommsLog
 ```
 
 ## Leyenda
@@ -78,9 +84,12 @@ flowchart TB
     Ejemplo: Catálogo ↔ Pedidos (disponibilidad de lotes y creación/cancelación de pedidos).  
     Ejemplo: Reseñas → Catálogo (reputación afecta ranking de lotes).
   - **ACL (Anti-Corruption Layer)**:  
-    Capa de traducción que protege el modelo de dominio de las peculiaridades de APIs externas (Stripe, transportistas, canales de mensajería).
+    Capa de traducción que protege el modelo de dominio de las peculiaridades de APIs externas.  
+    En el diagrama esto se refleja en las relaciones hacia:  
+    - **Sistemas de Pagos y Facturación** (Stripe, SAT FEL).  
+    - **Sistemas de Mensajería y Logística** (Twilio, SendGrid, Firebase, transportistas).
   - **Conformista**:  
-    CaféOrigen debe ajustarse al modelo de un tercero sin negociación, como SAT FEL para la facturación fiscal.
+    CaféOrigen debe ajustarse al modelo de un tercero sin negociación, como SAT FEL para la facturación fiscal (incluido dentro del nodo agrupado de Pagos y Facturación).
 
 ## Explicación
 
@@ -91,3 +100,4 @@ Este mapa refuerza:
   - Pedidos actúa como **emisor central** de eventos de negocio (`PedidoRealizado`, `PedidoConfirmado`, etc.).  
   - Pagos, Logística, Mensajería y Reseñas reaccionan a esos eventos sin acoplarse directamente a las entidades de Pedidos.
 - Los contextos **Generic** y **Supporting** son buenos candidatos a ser extraídos como servicios independientes en una fase futura, sin romper el lenguaje ubícuo ni los límites actuales.
+- La **agrupación de sistemas externos en el diagrama** (Pagos/Facturación por un lado, Mensajería/Logística por otro) refleja cómo se encapsulan detrás de ACLs técnicas dentro de los contextos de Pagos, Logística y Mensajería, sin cambiar la semántica de los bounded contexts de negocio.
